@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>SVIT Live Bus Dashboard</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <div class="card" style="width: 95%; max-width: 1150px; margin: 20px auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <div>
+                <h2 id="welcomeMsg" style="margin:0; color: #2c3e50;">SVIT Live Bus Allocation</h2>
+                <small style="color: #7f8c8d;">Service Period: Jan 2026 - June 2026</small>
+            </div>
+            <button onclick="logout()" style="width: auto; background: #e74c3c; color: white; padding: 10px 20px; border:none; border-radius:5px; cursor:pointer; font-weight: bold;">Logout / Back</button>
+        </div>
+
+        <div id="driverControls" style="display:none; background: #f4fdf9; padding: 20px; border-radius: 10px; margin: 20px 0; border: 2px solid #27ae60;">
+            <h3 style="margin-top:0; color: #27ae60;">🚍 Driver Control Center</h3>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px;">
+                    <label>Physical Bus ID:</label>
+                    <select id="busId" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;">
+                        <option>GJ-06-BX-1001</option>
+                        <option>GJ-06-BX-2002</option>
+                        <option>GJ-06-ZZ-5566</option>
+                        <option>GJ-06-AX-8899</option>
+                    </select>
+                </div>
+                <div style="flex: 2; min-width: 250px;">
+                    <label>Assign to Route Code:</label>
+                    <select id="routeSelect" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;"></select>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px;">
+                <button onclick="confirmAllocation()" style="background: #27ae60; color: white; padding: 15px; border:none; border-radius:8px; flex: 2; cursor:pointer; font-weight: bold; font-size: 16px;">🚀 START TRIP / GO LIVE</button>
+                <button onclick="clearAllRoutes()" style="background: #c0392b; color: white; padding: 15px; border:none; border-radius:8px; flex: 1; cursor:pointer; font-weight: bold;">🧹 RESET ALL DATA</button>
+            </div>
+        </div>
+
+        <div style="margin: 25px 0;">
+            <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Type your stop (e.g. Genda Circle, Manjalpur, Tarsali, Vasad)..." style="width: 100%; padding: 15px; border-radius: 30px; border: 2px solid #3498db; font-size: 16px; outline: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.05);">
+                <thead style="background: #2c3e50; color: white;">
+                    <tr>
+                        <th style="padding: 15px; text-align: left;">Bus ID</th>
+                        <th style="padding: 15px; text-align: left;">Route</th>
+                        <th style="padding: 15px; text-align: left;">Major Stoppages</th>
+                        <th style="padding: 15px; text-align: left;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="allocationBody">
+                    <tr><td colspan="4" style="text-align:center; padding:50px; color:#95a5a6;">🔄 Connecting to SVIT Real-Time Database...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 1. FIREBASE CONFIG (Using your Asia-Southeast Link)
+        const firebaseConfig = {
+            databaseURL: "https://svit-bus-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 2. COMPLETE SVIT ROUTE DATABASE (28 ROUTES)
+        const svitRouteData = {
+            "A-01": "SOMA TALAV, KRISHNA PARK, VRUNDAVAN, RUKSHMANI, SAMA SAVLI ROAD, DUMAD CHOWKDI",
+            "A-02": "GURUKUL, PARIVAR CHAR RASTA, MAHESH COMPLEX, KALADARSHAN",
+            "A-03": "JIVAN BHARTI SCHOOL, MUKTANAND, AMBALAL PARK, CHARBHUJA COMPLEX, ANAND NAGAR",
+            "A-04": "AMIT NAGAR, AMRAPALI, DUMAD CHOWKDI",
+            "A-05": "BRIGHT SCHOOL, L&T CIRCLE, EME CIRCLE, UDIPI, SEVEN SEAS MALL",
+            "A-06": "MOTI NAGAR, SHIV VATIKA, PANCHIL, DHAVAL NURSING, SANGAM, MEERA PARK, AIRPORT CIRCLE",
+            "A-07": "PUNAM COMPLEX, AYURVEDIC HOSPITAL, SURYA NAGAR, MAHAVIR HALL, MANEK PARK",
+            "A-08": "KAMLA NAGAR, SAYAJI BUS STOP, SARDAR ESTATE, KHODIYAR NAGAR, HARNI BRIGHT SCHOOL",
+            "A-09": "LAD BHAWAN, RELIENCE, VRUNDAVAN, PRABHAT, ZAVER NAGAR, UMA CHAR RASTA",
+            "A-10": "KISHAN VADI, KARELIBAUG WATER TANK",
+            "A-11": "GORWA ITI, SAYHOG, PANCHVATI",
+            "A-12": "ZYDEX, YASH COMPLEX, ISCON HEIGHT, AMIN PARTY PLOT, LAXMI PURA CIRCLE",
+            "A-13": "NATUBHAI CENTER, ELLORA PARK, KALPTARU, CASH AND CARRY, JAIN DERASAR",
+            "A-14": "SAMTA, PAVAN DHAM, AAKANKSHA DUPLEX, PUSHPAK TOWNSHIP",
+            "A-15": "PRATHAM COMPLEX, ISCON TEMPLE, HARINAGAR, RAJESH TOWER, RANESHWAR, PARLE POINT",
+            "A-16": "PANCHMUKHI HANUMAN, BANSAL STORE, TIME CIRCLE, SWAMINARAYAN TEMPLE, D-MART",
+            "A-17": "VISHVAMITRI, AKSHAR CHOWK, MANISHA CHOKDI, GENDA CIRCLE, FATHEGUNJ, VASAD",
+            "A-18": "VISHVAMITRI, MUNJ MAHUDA, AKOTA GARDEN, URMI CHAR RASTA, RAMA KAKA DERI, VASAD",
+            "A-19": "GAYATRINAGAR, MANEJA, NOVINO, SUSSEN, GIDC, VADSAR BRIDGE, KALALI CROSSING",
+            "A-20": "SAI CHOKDI, MANJALPUR, DARBAR CHOKDI, TULSIDHAM, RELIENCE CIRCLE, LALBAG, MOTIBAG",
+            "A-21": "BARODA DAIRY, KABIR COMPLEX, TULSI DHAM, MANJALPUR NAKA, KALA GHODA, CHHANI JAKAT NAKA",
+            "A-22": "TARSALI MARKET, SHARAD NAGAR, ONGC, BARODA DAIRY, RAJMAHAL ROAD, KALAGHODA",
+            "A-23": "TULSHIDHAM, TAPAN, DARBAR CHOKDI, MOTI BAG, KIRTI STAMBH, NARHARI, CHHANI JAKAT NAKA",
+            "A-24": "RAMESH PATEL ESTATE, SARSWATI COMPLEX, DEEP CHAMBERS, MOTIBAG, SAFFRON TOWER",
+            "A-25": "GOYA GATE, GANGOTRI, NAVAPURA POLICE STATION, JAYRATNA BUILDING, POLOGROUND",
+            "A-26": "SAMA GARDEN, CHAYANKYA PURI, SWATI SOCIETY, ABHILASHA, M. B. HOSTEL, RAMA KAKA DERI",
+            "AR-A-01": "Architecture: NOVINO, SUSEN, TULSIDHAM, AKSHAR CHOWK, HARINAGAR, GENDA CIRCLE, VASAD",
+            "AR-A-02": "Architecture: KALADARSHAN, UMA CHARRASTA, SANGAM, AMIT NAGAR, SAMA, CHHANI JAKAT NAKA"
+        };
+
+        // 3. INITIALIZATION
+        window.onload = function() {
+            const role = localStorage.getItem("role");
+            const driverName = localStorage.getItem("driverName");
+
+            if (role === "driver") {
+                document.getElementById("driverControls").style.display = "block";
+                document.getElementById("welcomeMsg").innerText = "Driver: " + driverName.toUpperCase();
+
+                const select = document.getElementById("routeSelect");
+                for (let code in svitRouteData) {
+                    let opt = document.createElement("option");
+                    opt.value = code;
+                    opt.innerHTML = code + " — " + svitRouteData[code].substring(0, 50) + "...";
+                    select.appendChild(opt);
+                }
+            }
+        };
+
+        // 4. FIREBASE CLOUD WRITE
+        function confirmAllocation() {
+            const bus = document.getElementById("busId").value;
+            const route = document.getElementById("routeSelect").value;
+            
+            database.ref('activeBuses/' + route).set({
+                busId: bus,
+                route: route,
+                stops: svitRouteData[route],
+                status: "LIVE",
+                timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            }).then(() => alert("Trip Started! Students can now see Bus " + bus + " on Route " + route));
+        }
+
+        function removeSingleRoute(routeKey) {
+            if(confirm("End trip for Route " + routeKey + "?")) {
+                database.ref('activeBuses/' + routeKey).remove();
+            }
+        }
+
+        function clearAllRoutes() {
+            if(confirm("ALERT: This will wipe the live table for all students. Proceed?")) {
+                database.ref('activeBuses').remove();
+            }
+        }
+
+        // 5. REAL-TIME CLOUD LISTENER
+        database.ref('activeBuses').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const body = document.getElementById("allocationBody");
+            const role = localStorage.getItem("role");
+            body.innerHTML = "";
+
+            if (!data) {
+                body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:50px; color:#95a5a6;">🚍 No buses are currently active. Waiting for drivers...</td></tr>`;
+                return;
+            }
+
+            for (let key in data) {
+                const b = data[key];
+                body.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding:15px;"><strong>${b.busId}</strong></td>
+                        <td style="padding:15px;"><span style="color:#2980b9; font-weight:bold; border:1px solid #2980b9; padding:3px 8px; border-radius:5px;">${b.route}</span></td>
+                        <td style="padding:15px; font-size:13px; color:#34495e;">${b.stops}</td>
+                        <td style="padding:15px;">
+                            <span style="background:#e6fffa; color:#234e52; padding:6px 12px; border-radius:20px; font-size:11px; font-weight:bold; border:1px solid #b2f5ea;">● LIVE</span>
+                            <div style="font-size:10px; color:#a0aec0; margin-top:5px;">Started: ${b.timestamp}</div>
+                            ${role === 'driver' ? `<button onclick="removeSingleRoute('${key}')" style="margin-top:10px; background:none; color:#e53e3e; border:1px solid #e53e3e; padding:3px 8px; cursor:pointer; font-size:10px; border-radius:5px; font-weight:bold;">Remove</button>` : ''}
+                        </td>
+                    </tr>`;
+            }
+        });
+
+        // 6. UTILITIES
+        function searchTable() {
+            let input = document.getElementById("searchInput").value.toUpperCase();
+            let tr = document.getElementById("allocationBody").getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                let txt = tr[i].innerText || tr[i].textContent;
+                tr[i].style.display = txt.toUpperCase().indexOf(input) > -1 ? "" : "none";
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+    </script>
+</body>
+</html>

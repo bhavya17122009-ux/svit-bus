@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+    <title>SVIT Bus System - Login</title>
+</head>
+<body>
+    <div class="card">
+        <h2 style="color: #2980b9;">SVIT Bus Tracker</h2>
+        <p>Institute ID: 01SVIT (Engineering/Diploma)</p>
+        
+        <button class="btn-student" onclick="goToStudent()">View Live Routes (Student/Teacher)</button>
+        
+        <hr style="margin: 20px 0;">
+        
+        <div id="loginSection">
+            <h3>Driver Login</h3>
+            <input type="text" id="username" placeholder="Driver ID (e.g., bhavin_svit)">
+            <input type="password" id="password" placeholder="Password">
+            <button class="btn-driver" onclick="checkLogin()">Login as Driver</button>
+            <p style="font-size: 11px; color: #666;">Credentials: bhavin_svit / pass123</p>
+        </div>
+    </div>
+
+    <script>
+        function goToStudent() {
+            localStorage.setItem("role", "student");
+            window.location.href = "dashboard.html";
+        }
+
+        function checkLogin() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+            
+            // Driver Credentials based on SVIT Transport contacts
+            const drivers = {
+                "bhavin_svit": "pass123",
+                "chintan_svit": "pass456",
+                "devendra_svit": "pass789"
+            };
+
+            if(drivers[user] && drivers[user] === pass) {
+                localStorage.setItem("role", "driver");
+                localStorage.setItem("driverName", user.split('_')[0]);
+                window.location.href = "dashboard.html";
+            } else {
+                alert("Invalid Credentials! Please use authorized Driver ID.");
+            }
+        }
+    </script>
+</body>
+</html>
