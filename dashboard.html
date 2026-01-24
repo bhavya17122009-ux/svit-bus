@@ -4,9 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>SVIT Live Bus Tracker + GPS</title>
+    <title>SVIT Live Bus Tracker | Smart Campus</title>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        #map {
+            height: 350px;
+            width: 100%;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #3498db;
+            z-index: 1;
+        }
+        .emergency-btn {
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .emergency-btn:active { transform: scale(0.95); }
+    </style>
 </head>
 <body>
 
@@ -14,18 +33,20 @@
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
             <div>
                 <h2 id="welcomeMsg" style="margin:0; color: #2c3e50;">SVIT Live Bus Tracker</h2>
-                <small style="color: #7f8c8d;">Jan 2026 Session | Live GPS Enabled</small>
+                <small style="color: #27ae60; font-weight: bold;">● Real-Time GPS Active</small>
             </div>
-            <button onclick="logout()" style="width: auto; background: #e74c3c; color: white; padding: 10px 20px; border:none; border-radius:5px; cursor:pointer; font-weight: bold;">Logout</button>
+            <button onclick="logout()" style="width: auto; background: #e74c3c; color: white; padding: 10px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Logout</button>
         </div>
 
-        <div id="driverControls" style="display:none; background: #f4fdf9; padding: 20px; border-radius: 10px; margin: 20px 0; border: 2px solid #27ae60;">
-            <h3 style="margin-top:0; color: #27ae60;">🚍 Driver GPS Control Center</h3>
-            <div id="gpsStatus" style="font-size: 13px; font-weight: bold; color: #e67e22; margin-bottom: 10px;">GPS Status: Offline (Waiting to Start)</div>
-            
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 250px;">
-                    <label>Bus ID:</label>
+        <h3 style="margin-top: 20px; color: #34495e;">📍 Live Bus Movement</h3>
+        <div id="map"></div>
+
+        <div id="driverControls" style="display:none; background: #f4fdf9; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 2px solid #27ae60;">
+            <h3 style="margin-top:0; color: #27ae60;">🚍 Driver Control Center</h3>
+            <p id="gpsStatus" style="font-size: 12px; color: #e67e22; font-weight:bold;">GPS Status: Ready</p>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label>Bus Number:</label>
                     <select id="busId" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;">
                         <option>GJ-06-BX-1001</option>
                         <option>GJ-06-BX-2002</option>
@@ -33,38 +54,63 @@
                     </select>
                 </div>
                 <div style="flex: 2; min-width: 250px;">
-                    <label>Assign to Route:</label>
+                    <label>Select Route:</label>
                     <select id="routeSelect" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;"></select>
                 </div>
             </div>
-            <div style="margin-top: 20px; display: flex; gap: 15px;">
-                <button onclick="confirmAllocation()" style="background: #27ae60; color: white; padding: 15px; border:none; border-radius:8px; flex: 2; cursor:pointer; font-weight: bold; font-size: 16px;">🚀 START TRIP & SHARE GPS</button>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button onclick="confirmAllocation()" style="background: #27ae60; color: white; padding: 15px; border:none; border-radius:8px; flex: 2; cursor:pointer; font-weight:bold;">START TRIP & LIVE GPS</button>
                 <button onclick="clearAllRoutes()" style="background: #c0392b; color: white; padding: 15px; border:none; border-radius:8px; flex: 1; cursor:pointer;">RESET ALL</button>
             </div>
         </div>
 
-        <div style="margin: 25px 0;">
-            <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Find your area (Genda Circle, Vasad, Soma Talav)..." style="width: 100%; padding: 15px; border-radius: 30px; border: 2px solid #3498db; font-size: 16px; outline: none;">
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Search area (e.g. Genda Circle, Vasad, Soma Talav)..." style="width: 100%; padding: 15px; border-radius: 30px; border: 2px solid #3498db; outline: none; font-size: 16px;">
         </div>
 
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px;">
+            <table style="width: 100%; border-collapse: collapse; background: white;">
                 <thead style="background: #2c3e50; color: white;">
                     <tr>
-                        <th style="padding: 15px; text-align: left;">Bus ID</th>
-                        <th style="padding: 15px; text-align: left;">Route</th>
-                        <th style="padding: 15px; text-align: left;">Live Tracking</th>
-                        <th style="padding: 15px; text-align: left;">Status</th>
+                        <th style="padding: 12px; text-align: left;">Bus</th>
+                        <th style="padding: 12px; text-align: left;">Route</th>
+                        <th style="padding: 12px; text-align: left;">Main Stoppages</th>
+                        <th style="padding: 12px; text-align: left;">Status</th>
                     </tr>
                 </thead>
                 <tbody id="allocationBody">
-                    <tr><td colspan="4" style="text-align:center; padding:50px; color:#95a5a6;">Connecting to SVIT Database...</td></tr>
+                    <tr><td colspan="4" style="text-align:center; padding:30px; color:#999;">Syncing with SVIT Cloud...</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <div style="margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px;">
+            <h3 style="color: #c0392b; margin-bottom: 10px;">🚨 Emergency Help Desk</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                <a href="tel:+919900000000" class="emergency-btn">
+                    <div style="background: #fff5f5; border: 1px solid #feb2b2; padding: 10px; border-radius: 8px; text-align: center;">
+                        <strong style="display: block; color: #c53030; font-size: 11px;">SVIT Supervisor</strong>
+                        <span style="font-size: 13px; font-weight: bold; color: #2d3748;">📞 Call Bhavin Bhai</span>
+                    </div>
+                </a>
+                <a href="tel:108" class="emergency-btn">
+                    <div style="background: #ebf8ff; border: 1px solid #bee3f8; padding: 10px; border-radius: 8px; text-align: center;">
+                        <strong style="display: block; color: #2b6cb0; font-size: 11px;">Ambulance</strong>
+                        <span style="font-size: 13px; font-weight: bold; color: #2d3748;">📞 Dial 108</span>
+                    </div>
+                </a>
+                <a href="tel:100" class="emergency-btn">
+                    <div style="background: #ebf8ff; border: 1px solid #bee3f8; padding: 10px; border-radius: 8px; text-align: center;">
+                        <strong style="display: block; color: #2b6cb0; font-size: 11px;">Police</strong>
+                        <span style="font-size: 13px; font-weight: bold; color: #2d3748;">📞 Dial 100</span>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
     <script>
+        // --- 1. CONFIG & DATA ---
         const firebaseConfig = {
             databaseURL: "https://svit-bus-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
         };
@@ -102,35 +148,41 @@
             "AR-A-02": "Arch: KALADARSHAN, UMA CHARRASTA, SANGAM, AMIT NAGAR, SAMA, CHHANI JAKAT NAKA"
         };
 
+        // --- 2. MAP INITIALIZATION ---
+        var map = L.map('map').setView([22.4552, 73.0745], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© SVIT Smart Campus'
+        }).addTo(map);
+
+        var markers = {};
+        var busIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
+            iconSize: [35, 35],
+            iconAnchor: [17, 17]
+        });
+
+        // --- 3. GPS LOGIC ---
         let watchId = null;
-
         function startGPSTracking(routeCode) {
-            const statusDiv = document.getElementById("gpsStatus");
-            if (!navigator.geolocation) {
-                statusDiv.innerText = "GPS Error: Not supported on this device.";
-                return;
-            }
-
-            statusDiv.innerText = "GPS Status: Requesting Permission...";
-
+            const status = document.getElementById("gpsStatus");
+            if (!navigator.geolocation) { status.innerText = "GPS Not Supported"; return; }
+            
             watchId = navigator.geolocation.watchPosition(
                 (pos) => {
-                    statusDiv.innerText = "GPS Status: ✅ Online (Updating Cloud)";
-                    statusDiv.style.color = "#27ae60";
+                    status.innerText = "GPS Status: ✅ Online";
+                    status.style.color = "#27ae60";
                     database.ref('activeBuses/' + routeCode).update({
                         lat: pos.coords.latitude,
                         lon: pos.coords.longitude,
                         gpsTime: new Date().toLocaleTimeString()
                     });
                 },
-                (err) => {
-                    statusDiv.innerText = "GPS Error: " + err.message;
-                    statusDiv.style.color = "#e74c3c";
-                },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                (err) => { status.innerText = "GPS Error: " + err.message; status.style.color = "#e74c3c"; },
+                { enableHighAccuracy: true }
             );
         }
 
+        // --- 4. PAGE SETUP ---
         window.onload = function() {
             const role = localStorage.getItem("role");
             if (role === "driver") {
@@ -139,51 +191,58 @@
                 for (let code in svitRouteData) {
                     let opt = document.createElement("option");
                     opt.value = code;
-                    opt.innerHTML = code + " (" + svitRouteData[code].substring(0, 30) + "...)";
+                    opt.innerHTML = code + " (" + svitRouteData[code].substring(0, 35) + "...)";
                     select.appendChild(opt);
                 }
             }
         };
 
+        // --- 5. CLOUD ACTIONS ---
         function confirmAllocation() {
             const bus = document.getElementById("busId").value;
             const route = document.getElementById("routeSelect").value;
-            
             database.ref('activeBuses/' + route).set({
-                busId: bus,
-                route: route,
-                stops: svitRouteData[route],
-                status: "LIVE",
-                timestamp: new Date().toLocaleTimeString()
+                busId: bus, route: route, stops: svitRouteData[route], status: "LIVE", timestamp: new Date().toLocaleTimeString()
             }).then(() => {
+                alert("Trip Started! Sharing Location...");
                 startGPSTracking(route);
             });
         }
 
-        function clearAllRoutes() { if(confirm("Clear all?")) database.ref('activeBuses').remove(); }
-        function removeSingle(key) { if(confirm("End trip?")) database.ref('activeBuses/' + key).remove(); }
+        function clearAllRoutes() { if(confirm("End all active trips?")) database.ref('activeBuses').remove(); }
+        function removeSingle(key) { if(confirm("Remove this bus?")) database.ref('activeBuses/' + key).remove(); }
 
+        // --- 6. REAL-TIME LISTENER (TABLE + MAP) ---
         database.ref('activeBuses').on('value', (snapshot) => {
             const data = snapshot.val();
             const body = document.getElementById("allocationBody");
             const role = localStorage.getItem("role");
             body.innerHTML = "";
-            if (!data) { body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px;">No active buses.</td></tr>`; return; }
+
+            // Sync Map Markers
+            for (let id in markers) { if (!data || !data[id]) { map.removeLayer(markers[id]); delete markers[id]; } }
+
+            if (!data) { body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px;">No active buses.</td></tr>`; return; }
 
             for (let key in data) {
                 const b = data[key];
-                // THE LINK: Using the standard Google Maps coordinates link
-                const mapBtn = b.lat ? `<a href="https://www.google.com/maps?q=${b.lat},${b.lon}" target="_blank" style="background:#3498db; color:white; padding:5px 8px; border-radius:4px; text-decoration:none; font-size:12px; display:inline-block; margin-bottom:5px;">📍 View on Map</a>` : "<span style='color:#e67e22'>Connecting GPS...</span>";
                 
+                // Update Map
+                if (b.lat && b.lon) {
+                    if (markers[key]) { markers[key].setLatLng([b.lat, b.lon]); } 
+                    else { markers[key] = L.marker([b.lat, b.lon], {icon: busIcon}).addTo(map).bindPopup(`<b>Route ${b.route}</b>`); }
+                }
+
+                // Update Table
                 body.innerHTML += `
                     <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding:15px;"><b>${b.busId}</b></td>
-                        <td style="padding:15px; color:#2980b9;"><b>${b.route}</b></td>
-                        <td style="padding:15px;">${mapBtn}<br><small style="font-size:10px; color:#7f8c8d;">${b.stops.substring(0,40)}...</small></td>
-                        <td style="padding:15px;">
+                        <td style="padding:12px;"><b>${b.busId}</b></td>
+                        <td style="padding:12px; color:#2980b9;"><b>${b.route}</b></td>
+                        <td style="padding:12px; font-size:12px; color:#555;">${b.stops.substring(0,50)}...</td>
+                        <td style="padding:12px;">
                             <span style="color:green; font-weight:bold;">● LIVE</span><br>
                             <small>${b.timestamp}</small>
-                            ${role === 'driver' ? `<br><button onclick="removeSingle('${key}')" style="color:red; border:1px solid red; background:none; cursor:pointer; font-size:10px; margin-top:5px; border-radius:3px;">End Trip</button>` : ''}
+                            ${role === 'driver' ? `<br><button onclick="removeSingle('${key}')" style="color:red; border:1px solid red; background:none; cursor:pointer; font-size:10px; border-radius:3px; margin-top:5px;">End</button>` : ''}
                         </td>
                     </tr>`;
             }
@@ -197,6 +256,7 @@
                 tr[i].style.display = txt.indexOf(input) > -1 ? "" : "none";
             }
         }
+
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
     </script>
 </body>
