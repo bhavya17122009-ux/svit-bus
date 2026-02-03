@@ -126,13 +126,22 @@
         }
 
         // 4. GPS & DRIVER SETUP
-        window.onload = function() {
-            if (localStorage.getItem("role") === "driver") {
-                document.getElementById("driverControls").style.display = "block";
-                const sel = document.getElementById("routeSelect");
-                for (let r in svitRoutes) { sel.options[sel.options.length] = new Option(r, r); }
-            }
-        };
+       window.onload = function() {
+    const role = localStorage.getItem("role");
+    if (role === "driver") {
+        document.getElementById("driverControls").style.display = "block";
+        const select = document.getElementById("routeSelect");
+        
+        // Loop through the routes and show ID + Full Name
+        for (let code in svitRoutes) {
+            let opt = document.createElement("option");
+            opt.value = code;
+            // This line now shows "A-01 (SOMA TALAV, KRISHNA PARK...)"
+            opt.innerHTML = `${code} — ${svitRoutes[code]}`;
+            select.appendChild(opt);
+        }
+    }
+};
 
         function confirmAllocation() {
             const b = document.getElementById("busId").value;
@@ -194,5 +203,6 @@ database.ref('activeBuses').on('value', snap => {
     </script>
 </body>
 </html>
+
 
 
