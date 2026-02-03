@@ -1,53 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>SVIT Bus System - Login</title>
+    <title>SVIT Bus Login</title>
 </head>
 <body>
-    <div class="card">
-        <h2 style="color: #2980b9;">SVIT Bus Tracker</h2>
-    
+    <div class="card" style="width: 350px; margin: 50px auto; text-align: center; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <h2 style="color: #2c3e50; margin-bottom: 5px;">SVIT Bus Tracker</h2>
+        <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 30px;">Student & Driver Portal</p>
         
-        <button class="btn-student" onclick="goToStudent()">View Live Routes (Student/Teacher)</button>
+        <button onclick="loginAsStudent()" style="background: #3498db; color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 30px; font-size: 16px;">
+            View Live Routes (Student/Faculty)
+        </button>
         
-        <hr style="margin: 20px 0;">
-        
-        <div id="loginSection">
-            <h3>Driver Login</h3>
-            <input type="text" id="username" placeholder="Driver ID (e.g., bhavin_svit)">
-            <input type="password" id="password" placeholder="Password">
-            <button class="btn-driver" onclick="checkLogin()">Login as Driver</button
-                
+        <div style="border-top: 1px solid #eee; padding-top: 25px; text-align: left;">
+            <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 15px; text-align: center;">Driver Management Login</h3>
+            <input type="text" id="username" placeholder="Driver ID" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+            <input type="password" id="password" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+            <button onclick="loginAsDriver()" style="background: #27ae60; color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;">
+                Driver Sign In
+            </button>
         </div>
     </div>
 
     <script>
-        function goToStudent() {
+        function loginAsStudent() {
             localStorage.setItem("role", "student");
             window.location.href = "dashboard.html";
         }
-
-        function checkLogin() {
+        function loginAsDriver() {
             const user = document.getElementById("username").value;
             const pass = document.getElementById("password").value;
-            
-            // Driver Credentials based on SVIT Transport contacts
-            const drivers = {
-                "bhavin_svit": "pass123",
-                "chintan_svit": "pass456",
-                "devendra_svit": "pass789"
-            };
+            const drivers = { "bhavin_svit": "pass123", "chintan_svit": "pass456" };
 
-            if(drivers[user] && drivers[user] === pass) {
+            if (drivers[user] && drivers[user] === pass) {
                 localStorage.setItem("role", "driver");
                 localStorage.setItem("driverName", user.split('_')[0]);
                 window.location.href = "dashboard.html";
             } else {
-                alert("Invalid Credentials! Please use authorized Driver ID.");
+                alert("Invalid Credentials!");
             }
         }
     </script>
 </body>
-
 </html>
