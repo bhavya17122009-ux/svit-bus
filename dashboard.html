@@ -121,42 +121,50 @@
             });
         }
 
-        // 5. LIVE LISTENER (Table + Map)
-        database.ref('activeBuses').on('value', snap => {
-            const data = snap.val();
-            const body = document.getElementById("allocationBody");
-            body.innerHTML = "";
-            for (let id in markers) { if (!data || !data[id]) { map.removeLayer(markers[id]); delete markers[id]; } }
-            if (!data) return;
+// 5. LIVE LISTENER (Table + Map) - UPDATED FOR FULL NAMES
+database.ref('activeBuses').on('value', snap => {
+    const data = snap.val();
+    const body = document.getElementById("allocationBody");
+    body.innerHTML = "";
+    
+    // Sync Map Markers
+    for (let id in markers) { if (!data || !data[id]) { map.removeLayer(markers[id]); delete markers[id]; } }
+    
+    if (!data) {
+        body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">No active buses currently.</td></tr>`;
+        return;
+    }
 
-            for (let k in data) {
-                const b = data[k];
-                const eta = b.lat ? getETA(b.lat, b.lon, b.speed || 30) : null;
-                if (b.lat) {
-                    if (markers[k]) markers[k].setLatLng([b.lat, b.lon]);
-                    else markers[k] = L.marker([b.lat, b.lon], {icon: busIcon}).addTo(map).bindPopup(`Route ${b.route}`);
-                }
-                body.innerHTML += `
-                    <tr>
-                        <td><b>${b.busId}</b></td>
-                        <td>${b.route}<br><small style="color:#777">${b.stops.substring(0,25)}...</small></td>
-                        <td>
-                            ${eta ? `<b>${eta.mins} mins</b> to SVIT<br>
-                            <span class="traffic-badge" style="background:${eta.isTraffic ? '#fed7d7' : '#c6f6d5'}; color:${eta.isTraffic ? '#c53030' : '#276749'}">
-                                ${eta.isTraffic ? '⚠️ Traffic' : '✅ Smooth'}</span>` : 'Connecting...'}
-                        </td>
-                        <td><span style="color:green; font-weight:bold;">● LIVE</span></td>
-                    </tr>`;
-            }
-        });
-
-        function clearAll() { if(confirm("Clear Data?")) database.ref('activeBuses').remove(); }
-        function logout() { localStorage.clear(); window.location.href = "index.html"; }
-        function searchTable() {
-            let q = document.getElementById("searchInput").value.toUpperCase();
-            let rows = document.getElementById("allocationBody").rows;
-            for (let r of rows) { r.style.display = r.innerText.toUpperCase().includes(q) ? "" : "none"; }
+    for (let k in data) {
+        const b = data[k];
+        const eta = b.lat ? getETA(b.lat, b.lon, b.speed || 30) : null;
+        
+        // Update Marker on Map
+        if (b.lat) {
+            if (markers[k]) markers[k].setLatLng([b.lat, b.lon]);
+            else markers[k] = L.marker([b.lat, b.lon], {icon: busIcon}).addTo(map).bindPopup(`Route ${b.route}`);
         }
+
+        // --- THE FIX IS HERE: Removed .substring() ---
+        body.innerHTML += `
+            <tr>
+                <td style="padding:12px; vertical-align:top;"><b>${b.busId}</b></td>
+                <td style="padding:12px; vertical-align:top; max-width: 250px; word-wrap: break-word;">
+                    <strong style="color:#2980b9;">${b.route}</strong><br>
+                    <small style="color:#555; line-height:1.4;">${b.stops}</small>
+                </td>
+                <td style="padding:12px; vertical-align:top;">
+                    ${eta ? `<b>${eta.mins} mins</b> to SVIT<br>
+                    <span class="traffic-badge" style="background:${eta.isTraffic ? '#fed7d7' : '#c6f6d5'}; color:${eta.isTraffic ? '#c53030' : '#276749'}">
+                        ${eta.isTraffic ? '⚠️ Traffic' : '✅ Smooth'}</span>` : 'Connecting...'}
+                </td>
+                <td style="padding:12px; vertical-align:top;">
+                    <span style="color:green; font-weight:bold;">● LIVE</span>
+                </td>
+            </tr>`;
+    }
+});
     </script>
 </body>
 </html>
+
