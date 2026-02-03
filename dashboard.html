@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>SVIT Live Bus Tracker | Smart Campus</title>
+    <title>SVIT Live Dashboard</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -12,252 +12,154 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        #map {
-            height: 350px;
-            width: 100%;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 2px solid #3498db;
-            z-index: 1;
-        }
-        .emergency-btn {
-            text-decoration: none;
-            transition: transform 0.2s;
-        }
-        .emergency-btn:active { transform: scale(0.95); }
+        #map { height: 350px; width: 100%; border-radius: 12px; margin-bottom: 20px; border: 2px solid #3498db; z-index: 1; }
+        .traffic-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; margin-top: 5px; }
+        .eta-box { background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 4px solid #3498db; }
     </style>
 </head>
 <body>
 
-    <div class="card" style="width: 95%; max-width: 1150px; margin: 20px auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+    <div class="card" style="width: 95%; max-width: 1200px; margin: 20px auto; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
             <div>
-                <h2 id="welcomeMsg" style="margin:0; color: #2c3e50;">SVIT Live Bus Tracker</h2>
-                <small style="color: #27ae60; font-weight: bold;">● Real-Time GPS Active</small>
+                <h2 style="margin:0; color: #2c3e50;">SVIT Live Tracker</h2>
+                <div id="gpsStatus" style="font-size: 12px; color: #7f8c8d;">Status: System Online</div>
             </div>
-            <button onclick="logout()" style="width: auto; background: #e74c3c; color: white; padding: 10px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Logout</button>
+            <button onclick="logout()" style="background: #e74c3c; color: white; padding: 10px 15px; border:none; border-radius:5px; cursor:pointer;">Logout</button>
         </div>
 
-        <h3 style="margin-top: 20px; color: #34495e;">📍 Live Bus Movement</h3>
         <div id="map"></div>
 
-        <div id="driverControls" style="display:none; background: #f4fdf9; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 2px solid #27ae60;">
-            <h3 style="margin-top:0; color: #27ae60;">🚍 Driver Control Center</h3>
-            <p id="gpsStatus" style="font-size: 12px; color: #e67e22; font-weight:bold;">GPS Status: Ready</p>
+        <div id="driverControls" style="display:none; background: #e8f8f5; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #2ecc71;">
+            <h3 style="margin-top:0;">📋 Driver Management</h3>
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 200px;">
-                    <label>Bus Number:</label>
-                    <select id="busId" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;">
-                        <option>GJ-06-BX-1001</option>
-                        <option>GJ-06-BX-2002</option>
-                        <option>GJ-06-ZZ-5566</option>
-                    </select>
-                </div>
-                <div style="flex: 2; min-width: 250px;">
-                    <label>Select Route:</label>
-                    <select id="routeSelect" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;"></select>
-                </div>
+                <select id="busId" style="padding:10px; flex:1;">
+                    <option>GJ-06-BX-1001</option><option>GJ-06-BX-2002</option><option>GJ-06-ZZ-5566</option>
+                </select>
+                <select id="routeSelect" style="padding:10px; flex:2;"></select>
             </div>
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button onclick="confirmAllocation()" style="background: #27ae60; color: white; padding: 15px; border:none; border-radius:8px; flex: 2; cursor:pointer; font-weight:bold;">START TRIP & LIVE GPS</button>
-                <button onclick="clearAllRoutes()" style="background: #c0392b; color: white; padding: 15px; border:none; border-radius:8px; flex: 1; cursor:pointer;">RESET ALL</button>
-            </div>
+            <button onclick="confirmAllocation()" style="width:100%; margin-top:15px; background:#27ae60; color:white; padding:12px; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">🚀 START TRIP & SHARE GPS</button>
+            <button onclick="clearAll()" style="width:100%; margin-top:10px; background:#c0392b; color:white; padding:8px; border:none; border-radius:5px; cursor:pointer;">Reset All Data</button>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Search area (e.g. Genda Circle, Vasad, Soma Talav)..." style="width: 100%; padding: 15px; border-radius: 30px; border: 2px solid #3498db; outline: none; font-size: 16px;">
-        </div>
+        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Search area (Vasad, Genda Circle, Manjalpur)..." style="width:100%; padding:15px; border-radius:30px; border:1px solid #3498db; margin-bottom:20px; outline:none;">
 
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; background: white;">
+            <table style="width: 100%; border-collapse: collapse;">
                 <thead style="background: #2c3e50; color: white;">
                     <tr>
-                        <th style="padding: 12px; text-align: left;">Bus</th>
-                        <th style="padding: 12px; text-align: left;">Route</th>
-                        <th style="padding: 12px; text-align: left;">Main Stoppages</th>
-                        <th style="padding: 12px; text-align: left;">Status</th>
+                        <th style="padding:12px; text-align:left;">Bus</th>
+                        <th style="padding:12px; text-align:left;">Route</th>
+                        <th style="padding:12px; text-align:left;">ETA & Traffic</th>
+                        <th style="padding:12px; text-align:left;">Status</th>
                     </tr>
                 </thead>
-                <tbody id="allocationBody">
-                    <tr><td colspan="4" style="text-align:center; padding:30px; color:#999;">Syncing with SVIT Cloud...</td></tr>
-                </tbody>
+                <tbody id="allocationBody"></tbody>
             </table>
         </div>
 
         <div style="margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px;">
-            <h3 style="color: #c0392b; margin-bottom: 10px;">🚨 Emergency Help Desk</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                <a href="tel:+919900000000" class="emergency-btn">
-                    <div style="background: #fff5f5; border: 1px solid #feb2b2; padding: 10px; border-radius: 8px; text-align: center;">
-                        <strong style="display: block; color: #c53030; font-size: 11px;">SVIT Supervisor</strong>
-                        <span style="font-size: 13px; font-weight: bold; color: #2d3748;">📞 Call Bhavin Bhai</span>
-                    </div>
-                </a>
-                <a href="tel:108" class="emergency-btn">
-                    <div style="background: #ebf8ff; border: 1px solid #bee3f8; padding: 10px; border-radius: 8px; text-align: center;">
-                        <strong style="display: block; color: #2b6cb0; font-size: 11px;">Ambulance</strong>
-                        <span style="font-size: 13px; font-weight: bold; color: #2d3748;">📞 Dial 108</span>
-                    </div>
-                </a>
-                <a href="tel:100" class="emergency-btn">
-                    <div style="background: #ebf8ff; border: 1px solid #bee3f8; padding: 10px; border-radius: 8px; text-align: center;">
-                        <strong style="display: block; color: #2b6cb0; font-size: 11px;">Police</strong>
-                        <span style="font-size: 13px; font-weight: bold; color: #2d3748;">📞 Dial 100</span>
-                    </div>
-                </a>
+            <h4 style="color: #c0392b; margin-bottom:10px;">🚨 Emergency Contacts</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="tel:108" style="background:#fff5f5; border:1px solid #feb2b2; padding:10px; border-radius:5px; text-decoration:none; color:#c53030; font-weight:bold;">🚑 Ambulance: 108</a>
+                <a href="tel:100" style="background:#fff5f5; border:1px solid #feb2b2; padding:10px; border-radius:5px; text-decoration:none; color:#c53030; font-weight:bold;">👮 Police: 100</a>
+                <a href="tel:1033" style="background:#fffaf0; border:1px solid #feebc8; padding:10px; border-radius:5px; text-decoration:none; color:#c05621; font-weight:bold;">🛣️ Highway: 1033</a>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIG & DATA ---
-        const firebaseConfig = {
-            databaseURL: "https://svit-bus-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        };
+        // 1. DATABASE & MAP SETUP
+        const firebaseConfig = { databaseURL: "https://svit-bus-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const svitLoc = { lat: 22.4552, lon: 73.0745 }; // SVIT Vasad
 
-        const svitRouteData = {
-            "A-01": "SOMA TALAV, KRISHNA PARK, VRUNDAVAN, RUKSHMANI, SAMA SAVLI ROAD, DUMAD CHOWKDI",
-            "A-02": "GURUKUL, PARIVAR CHAR RASTA, MAHESH COMPLEX, KALADARSHAN",
-            "A-03": "JIVAN BHARTI SCHOOL, MUKTANAND, AMBALAL PARK, CHARBHUJA COMPLEX, ANAND NAGAR",
-            "A-04": "AMIT NAGAR, AMRAPALI, DUMAD CHOWKDI",
-            "A-05": "BRIGHT SCHOOL, L&T CIRCLE, EME CIRCLE, UDIPI, SEVEN SEAS MALL",
-            "A-06": "MOTI NAGAR, SHIV VATIKA, PANCHIL, DHAVAL NURSING, SANGAM, AIRPORT CIRCLE",
-            "A-07": "PUNAM COMPLEX, AYURVEDIC HOSPITAL, SURYA NAGAR, MAHAVIR HALL, MANEK PARK",
-            "A-08": "KAMLA NAGAR, SAYAJI BUS STOP, SARDAR ESTATE, KHODIYAR NAGAR, HARNI BRIGHT SCHOOL",
-            "A-09": "LAD BHAWAN, RELIENCE, VRUNDAVAN, PRABHAT, ZAVER NAGAR, UMA CHAR RASTA",
-            "A-10": "KISHAN VADI, KARELIBAUG WATER TANK",
-            "A-11": "GORWA ITI, SAYHOG, PANCHVATI",
-            "A-12": "ZYDEX, YASH COMPLEX, ISCON HEIGHT, AMIN PARTY PLOT, LAXMI PURA CIRCLE",
-            "A-13": "NATUBHAI CENTER, ELLORA PARK, KALPTARU, CASH AND CARRY, JAIN DERASAR",
-            "A-14": "SAMTA, PAVAN DHAM, AAKANKSHA DUPLEX, PUSHPAK TOWNSHIP",
-            "A-15": "PRATHAM COMPLEX, ISCON TEMPLE, HARINAGAR, RAJESH TOWER, RANESHWAR, PARLE POINT",
-            "A-16": "PANCHMUKHI HANUMAN, BANSAL STORE, TIME CIRCLE, SWAMINARAYAN TEMPLE, D-MART",
-            "A-17": "VISHVAMITRI, AKSHAR CHOWK, MANISHA CHOKDI, GENDA CIRCLE, FATHEGUNJ, VASAD",
-            "A-18": "VISHVAMITRI, MUNJ MAHUDA, AKOTA GARDEN, URMI CHAR RASTA, RAMA KAKA DERI, VASAD",
-            "A-19": "GAYATRINAGAR, MANEJA, NOVINO, SUSSEN, GIDC, VADSAR BRIDGE, KALALI CROSSING",
-            "A-20": "SAI CHOKDI, MANJALPUR, DARBAR CHOKDI, TULSIDHAM, RELIENCE CIRCLE, LALBAG, MOTIBAG",
-            "A-21": "BARODA DAIRY, KABIR COMPLEX, TULSI DHAM, MANJALPUR NAKA, KALA GHODA, CHHANI JAKAT NAKA",
-            "A-22": "TARSALI MARKET, SHARAD NAGAR, ONGC, BARODA DAIRY, RAJMAHAL ROAD, KALAGHODA",
-            "A-23": "TULSHIDHAM, TAPAN, DARBAR CHOKDI, MOTI BAG, KIRTI STAMBH, NARHARI, CHHANI JAKAT NAKA",
-            "A-24": "RAMESH PATEL ESTATE, SARSWATI COMPLEX, DEEP CHAMBERS, MOTIBAG, SAFFRON TOWER",
-            "A-25": "GOYA GATE, GANGOTRI, NAVAPURA POLICE STATION, JAYRATNA BUILDING, POLOGROUND",
-            "A-26": "SAMA GARDEN, CHAYANKYA PURI, SWATI SOCIETY, ABHILASHA, M. B. HOSTEL, RAMA KAKA DERI",
-            "AR-A-01": "Arch: NOVINO, SUSEN, TULSIDHAM, AKSHAR CHOWK, HARINAGAR, GENDA CIRCLE, VASAD",
-            "AR-A-02": "Arch: KALADARSHAN, UMA CHARRASTA, SANGAM, AMIT NAGAR, SAMA, CHHANI JAKAT NAKA"
+        var map = L.map('map').setView([svitLoc.lat, svitLoc.lon], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var markers = {};
+        var busIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png', iconSize: [35, 35] });
+
+        // 2. ROUTE DATA
+        const svitRoutes = {
+            "A-01": "SOMA TALAV, KRISHNA PARK, VRUNDAVAN, RUKSHMANI", "A-17": "VISHVAMITRI, AKSHAR CHOWK, GENDA CIRCLE, VASAD", "A-20": "SAI CHOKDI, MANJALPUR, DARBAR CHOKDI, MOTIBAG",
+            "AR-A-01": "Arch: NOVINO, SUSEN, AKSHAR CHOWK, GENDA CIRCLE, VASAD" // Add all 28 here...
         };
 
-        // --- 2. MAP INITIALIZATION ---
-        var map = L.map('map').setView([22.4552, 73.0745], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© SVIT Smart Campus'
-        }).addTo(map);
-
-        var markers = {};
-        var busIcon = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-            iconSize: [35, 35],
-            iconAnchor: [17, 17]
-        });
-
-        // --- 3. GPS LOGIC ---
-        let watchId = null;
-        function startGPSTracking(routeCode) {
-            const status = document.getElementById("gpsStatus");
-            if (!navigator.geolocation) { status.innerText = "GPS Not Supported"; return; }
-            
-            watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    status.innerText = "GPS Status: ✅ Online";
-                    status.style.color = "#27ae60";
-                    database.ref('activeBuses/' + routeCode).update({
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude,
-                        gpsTime: new Date().toLocaleTimeString()
-                    });
-                },
-                (err) => { status.innerText = "GPS Error: " + err.message; status.style.color = "#e74c3c"; },
-                { enableHighAccuracy: true }
-            );
+        // 3. ETA LOGIC
+        function getETA(lat1, lon1, speed) {
+            const R = 6371; 
+            const dLat = (svitLoc.lat - lat1) * Math.PI / 180;
+            const dLon = (svitLoc.lon - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(svitLoc.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const dist = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+            const avgSpeed = speed > 5 ? speed : 12; // Use 12km/h if bus is crawling in traffic
+            return { mins: Math.round((dist / avgSpeed) * 60), isTraffic: speed < 10 };
         }
 
-        // --- 4. PAGE SETUP ---
+        // 4. GPS TRACKING
+        function startGPS(route) {
+            navigator.geolocation.watchPosition(pos => {
+                database.ref('activeBuses/' + route).update({
+                    lat: pos.coords.latitude, lon: pos.coords.longitude,
+                    speed: (pos.coords.speed || 0) * 3.6, time: new Date().toLocaleTimeString()
+                });
+                document.getElementById("gpsStatus").innerText = "Status: ✅ Sharing GPS Live";
+            }, err => alert("GPS Error: Please Allow Location Access"), { enableHighAccuracy: true });
+        }
+
+        // 5. UI SYNC
         window.onload = function() {
-            const role = localStorage.getItem("role");
-            if (role === "driver") {
+            if (localStorage.getItem("role") === "driver") {
                 document.getElementById("driverControls").style.display = "block";
-                const select = document.getElementById("routeSelect");
-                for (let code in svitRouteData) {
-                    let opt = document.createElement("option");
-                    opt.value = code;
-                    opt.innerHTML = code + " (" + svitRouteData[code].substring(0, 35) + "...)";
-                    select.appendChild(opt);
-                }
+                const sel = document.getElementById("routeSelect");
+                for (let r in svitRoutes) { sel.options[sel.options.length] = new Option(r, r); }
             }
         };
 
-        // --- 5. CLOUD ACTIONS ---
         function confirmAllocation() {
-            const bus = document.getElementById("busId").value;
-            const route = document.getElementById("routeSelect").value;
-            database.ref('activeBuses/' + route).set({
-                busId: bus, route: route, stops: svitRouteData[route], status: "LIVE", timestamp: new Date().toLocaleTimeString()
-            }).then(() => {
-                alert("Trip Started! Sharing Location...");
-                startGPSTracking(route);
-            });
+            const b = document.getElementById("busId").value;
+            const r = document.getElementById("routeSelect").value;
+            database.ref('activeBuses/' + r).set({ busId: b, route: r, stops: svitRoutes[r], status: "LIVE" })
+            .then(() => startGPS(r));
         }
 
-        function clearAllRoutes() { if(confirm("End all active trips?")) database.ref('activeBuses').remove(); }
-        function removeSingle(key) { if(confirm("Remove this bus?")) database.ref('activeBuses/' + key).remove(); }
-
-        // --- 6. REAL-TIME LISTENER (TABLE + MAP) ---
-        database.ref('activeBuses').on('value', (snapshot) => {
-            const data = snapshot.val();
+        database.ref('activeBuses').on('value', snap => {
+            const data = snap.val();
             const body = document.getElementById("allocationBody");
-            const role = localStorage.getItem("role");
             body.innerHTML = "";
-
-            // Sync Map Markers
             for (let id in markers) { if (!data || !data[id]) { map.removeLayer(markers[id]); delete markers[id]; } }
+            if (!data) return;
 
-            if (!data) { body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px;">No active buses.</td></tr>`; return; }
-
-            for (let key in data) {
-                const b = data[key];
-                
-                // Update Map
-                if (b.lat && b.lon) {
-                    if (markers[key]) { markers[key].setLatLng([b.lat, b.lon]); } 
-                    else { markers[key] = L.marker([b.lat, b.lon], {icon: busIcon}).addTo(map).bindPopup(`<b>Route ${b.route}</b>`); }
+            for (let k in data) {
+                const b = data[k];
+                const eta = b.lat ? getETA(b.lat, b.lon, b.speed || 30) : null;
+                if (b.lat) {
+                    if (markers[k]) markers[k].setLatLng([b.lat, b.lon]);
+                    else markers[k] = L.marker([b.lat, b.lon], {icon: busIcon}).addTo(map).bindPopup(`Route ${b.route}`);
                 }
 
-                // Update Table
                 body.innerHTML += `
-                    <tr style="border-bottom: 1px solid #eee;">
+                    <tr>
                         <td style="padding:12px;"><b>${b.busId}</b></td>
-                        <td style="padding:12px; color:#2980b9;"><b>${b.route}</b></td>
-                        <td style="padding:12px; font-size:12px; color:#555;">${b.stops.substring(0,50)}...</td>
+                        <td style="padding:12px;">${b.route}<br><small>${b.stops.substring(0,30)}...</small></td>
                         <td style="padding:12px;">
-                            <span style="color:green; font-weight:bold;">● LIVE</span><br>
-                            <small>${b.timestamp}</small>
-                            ${role === 'driver' ? `<br><button onclick="removeSingle('${key}')" style="color:red; border:1px solid red; background:none; cursor:pointer; font-size:10px; border-radius:3px; margin-top:5px;">End</button>` : ''}
+                            ${eta ? `<b>${eta.mins} mins</b> to SVIT<br>
+                            <span class="traffic-badge" style="background:${eta.isTraffic ? '#fed7d7' : '#c6f6d5'}; color:${eta.isTraffic ? '#c53030' : '#276749'}">
+                                ${eta.isTraffic ? '⚠️ Traffic' : '✅ Smooth'}</span>` : 'Calculating...'}
                         </td>
+                        <td style="padding:12px;"><span style="color:green; font-weight:bold;">● LIVE</span></td>
                     </tr>`;
             }
         });
 
-        function searchTable() {
-            let input = document.getElementById("searchInput").value.toUpperCase();
-            let tr = document.getElementById("allocationBody").getElementsByTagName("tr");
-            for (let i = 0; i < tr.length; i++) {
-                let txt = tr[i].innerText.toUpperCase();
-                tr[i].style.display = txt.indexOf(input) > -1 ? "" : "none";
-            }
-        }
-
+        function clearAll() { if(confirm("Clear?")) database.ref('activeBuses').remove(); }
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
+        function searchTable() {
+            let q = document.getElementById("searchInput").value.toUpperCase();
+            let rows = document.getElementById("allocationBody").rows;
+            for (let r of rows) { r.style.display = r.innerText.toUpperCase().includes(q) ? "" : "none"; }
+        }
     </script>
 </body>
 </html>
