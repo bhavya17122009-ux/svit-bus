@@ -33,7 +33,7 @@
         function loginAsDriver() {
             const user = document.getElementById("username").value;
             const pass = document.getElementById("password").value;
-            const drivers = { "bhavin_svit": "pass123", "chintan_svit": "pass456", "devendra_svit": "pass789" };
+            const drivers = { "bhavin_svit": "123456", "chintan_svit": "123456", "devendra_svit": "123456" };
 
             if (drivers[user] && drivers[user] === pass) {
                 localStorage.setItem("role", "driver");
@@ -45,4 +45,5 @@
     </script>
 </body>
 </html>
+
 
