@@ -3,47 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVIT Login</title>
     <link rel="stylesheet" href="style.css">
-    <title>SVIT Bus Login</title>
 </head>
-<body>
-    <div class="card" style="width: 350px; margin: 50px auto; text-align: center; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-        <h2 style="color: #2c3e50; margin-bottom: 5px;">SVIT Bus Tracker</h2>
-        <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 30px;">Student & Driver Portal</p>
+<body style="background:#f4f7f6; font-family: sans-serif;">
+    <div style="max-width: 350px; margin: 80px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center;">
+        <h2 style="color: #2c3e50;">SVIT Bus Tracker</h2>
+        <button onclick="login('student')" style="width:100%; padding:15px; background:#3498db; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-bottom:20px;">Student / Faculty View</button>
         
-        <button onclick="loginAsStudent()" style="background: #3498db; color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 30px; font-size: 16px;">
-            View Live Routes (Student/Faculty)
-        </button>
-        
-        <div style="border-top: 1px solid #eee; padding-top: 25px; text-align: left;">
-            <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 15px; text-align: center;">Driver Login</h3>
-            <input type="text" id="username" placeholder="Driver ID" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
-            <input type="password" id="password" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
-            <button onclick="loginAsDriver()" style="background: #27ae60; color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;">
-                Driver Sign In
-            </button>
+        <div style="border-top: 1px solid #eee; padding-top: 20px;">
+            <p style="font-size:14px; color:#7f8c8d;">Driver Access</p>
+            <input type="password" id="driverPass" placeholder="Enter Driver Password" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box;">
+            <button onclick="login('driver')" style="width:100%; padding:15px; background:#27ae60; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Driver Login</button>
         </div>
     </div>
 
     <script>
-        function loginAsStudent() {
-            localStorage.setItem("role", "student");
-            window.location.href = "dashboard.html";
-        }
-        function loginAsDriver() {
-            const user = document.getElementById("username").value;
-            const pass = document.getElementById("password").value;
-            const drivers = { "bhavin_svit": "123456", "chintan_svit": "123456", "devendra_svit": "123456" };
-
-            if (drivers[user] && drivers[user] === pass) {
-                localStorage.setItem("role", "driver");
-                window.location.href = "dashboard.html";
+        function login(role) {
+            if (role === 'driver') {
+                const pass = document.getElementById('driverPass').value;
+                if (pass === "123456") {
+                    localStorage.setItem("role", "driver");
+                    window.location.href = "dashboard.html";
+                } else {
+                    alert("Incorrect Password!");
+                }
             } else {
-                alert("Invalid Credentials!");
+                localStorage.setItem("role", "student");
+                window.location.href = "dashboard.html";
             }
         }
     </script>
 </body>
 </html>
-
-
