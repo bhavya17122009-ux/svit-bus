@@ -9,47 +9,66 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        #map { height: 380px; width: 100%; border-radius: 12px; margin-bottom: 20px; border: 2px solid #3498db; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
-        th { background: #2c3e50; color: white; padding: 15px; text-align: left; }
-        td { padding: 15px; border-bottom: 1px solid #eee; vertical-align: top; }
-        .driver-panel { display:none; background:#e8f8f5; padding:20px; border-radius:10px; margin-bottom:20px; border:1px solid #2ecc71; }
-        .btn { padding:12px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f39c12; }
+        body { background:#f4f7f6; margin:0; padding:10px; font-family: 'Segoe UI', sans-serif; }
+        #map { height: 380px; width: 100%; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--accent); z-index: 1; }
+        .container { width: 98%; max-width: 1200px; margin: auto; }
+        .driver-panel { display:none; background:#e8f8f5; padding:20px; border-radius:12px; margin-bottom:20px; border:1px solid var(--success); }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        th { background: var(--primary); color: white; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .btn { padding:12px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; color: white; display: inline-block; margin-top: 5px; }
+        .emergency-box { background: #fff5f5; border: 2px solid var(--danger); border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .contact-link { color: var(--danger); font-weight: bold; text-decoration: none; display: block; margin: 5px 0; }
     </style>
 </head>
-<body style="background:#f4f7f6; margin:0; padding:10px; font-family: sans-serif;">
+<body>
 
     <audio id="wakeLockAudio" loop>
         <source src="https://github.com/anars/blank-audio/raw/master/10-seconds-of-silence.mp3" type="audio/mpeg">
     </audio>
 
-    <div style="width: 98%; max-width: 1200px; margin: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="color:#2c3e50;">SVIT Live Bus Tracker</h2>
-            <button onclick="logout()" style="padding:10px 20px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer;">Logout</button>
+    <div class="container">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="color:var(--primary);">🚀 SVIT Smart Transit</h2>
+            <button onclick="logout()" class="btn" style="background:var(--danger); color:white;">Logout</button>
         </div>
 
         <div id="map"></div>
 
-        <div id="driverControls" class="driver-panel">
-            <h3 style="margin-top:0; color:#27ae60;">🚍 Driver Control Panel</h3>
-            <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 15px;">
-                <select id="busId" style="padding:12px; border-radius:5px; border:1px solid #ddd;">
-                    <option>GJ-23-y-9599</option><option>GJ-23-aw-0090</option><option>GJ-23-y-9959</option><option>GJ-23-at-9972</option><option>GJ-23-aw-0900</option><option>GJ-23-at-0900</option><option>GJ-23-aw-0909</option><option>GJ-23-at-0909</option><option>GJ-23-aw-9729</option><option>GJ-23-aw-9279</option><option>GJ-23-ay-2799</option><option>GJ-23-ay-3699</option><option>GJ-23-ay-4599</option><option>GJ-23-ay-5499</option><option>GJ-23-ay-7299</option><option>GJ-23-aw-9999</option><option>GJ-23-ay-9999</option><option>GJ-23-aw-8735</option><option>GJ-23-aw-8788</option><option>GJ-23-aw-8982</option>
-                </select>
-                <select id="routeSelect" style="padding:12px; border-radius:5px; border:1px solid #ddd; flex-grow:1;"></select>
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap: wrap;">
-                <button onclick="confirmTrip()" class="btn" style="background:#27ae60; color:white;">🚀 START TRACKING</button>
-                <button onclick="removeSpecificRoute()" class="btn" style="background:#f39c12; color:white;">🛑 END CURRENT TRIP</button>
-                <button onclick="clearAllBuses()" class="btn" style="background:#c0392b; color:white;">⚠️ CLEAR ALL BUSES</button>
+        <div class="emergency-box">
+            <h3 style="margin:0; color:var(--danger);">🚨 Emergency Contacts</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
+                <a href="tel:100" class="contact-link">📞 Police Help: 100</a>
+                <a href="tel:108" class="contact-link">🚑 Ambulance: 108</a>
+                <a href="tel:181" class="contact-link">👩 Women Helpline: 181</a>
+                <a href="tel:02692231651" class="contact-link">🏫 SVIT Office: 02692-231651</a>
             </div>
         </div>
 
-        <input type="text" id="searchInput" onkeyup="search()" placeholder="🔍 Search Stop..." style="width:100%; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:20px; box-sizing: border-box;">
+        <div id="driverControls" class="driver-panel">
+            <h3 style="margin-top:0; color:var(--success);">🚍 Driver Console</h3>
+            <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 15px;">
+                <select id="busId" style="padding:12px; border-radius:6px; border:1px solid #ddd;">
+                    <option>GJ-23-y-9599</option><option>GJ-23-aw-0090</option><option>GJ-23-y-9959</option><option>GJ-23-at-9972</option><option>GJ-23-aw-0900</option>
+                    <option>GJ-23-at-0900</option><option>GJ-23-aw-0909</option><option>GJ-23-at-0909</option><option>GJ-23-aw-9729</option><option>GJ-23-aw-9279</option>
+                    <option>GJ-23-ay-2799</option><option>GJ-23-ay-3699</option><option>GJ-23-ay-4599</option><option>GJ-23-ay-5499</option><option>GJ-23-ay-7299</option>
+                    <option>GJ-23-aw-9999</option><option>GJ-23-ay-9999</option><option>GJ-23-aw-8735</option><option>GJ-23-aw-8788</option><option>GJ-23-aw-8982</option>
+                </select>
+                <select id="routeSelect" style="padding:12px; border-radius:6px; border:1px solid #ddd; flex-grow:1;"></select>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="confirmTrip()" class="btn" style="background:var(--success); color:white; flex:2;">🚀 START TRACKING</button>
+                <button onclick="removeRoute()" class="btn" style="background:var(--warning); color:white; flex:1;">🛑 END TRIP</button>
+                <button onclick="clearAll()" class="btn" style="background:var(--danger); color:white; flex:1;">RESET</button>
+            </div>
+        </div>
+
+        <input type="text" id="searchInput" onkeyup="search()" placeholder="🔍 Search Stop or Route..." style="width:100%; padding:15px; border-radius:10px; border:1px solid #ddd; margin-bottom:20px; box-sizing: border-box;">
 
         <table>
-            <thead><tr><th>Bus Registration</th><th>Route & Stops</th><th>Live Status</th></tr></thead>
+            <thead><tr><th>Bus Detail</th><th>Route & Stops</th><th>ETA / Traffic</th><th>Status</th></tr></thead>
             <tbody id="allocationBody"></tbody>
         </table>
     </div>
@@ -58,6 +77,7 @@
         const firebaseConfig = { databaseURL: "https://svit-bus-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const svitCoords = [22.4552, 73.0745];
 
         const svitRoutes = {
             "A-01": "SOMA TALAV, KRISHNA PARK, VRUNDAVAN, RUKSHMANI, SAMA SAVLI ROAD",
@@ -90,7 +110,7 @@
             "AR-A-02": "Arch: KALADARSHAN, UMA CHARRASTA, SANGAM, AMIT NAGAR"
         };
 
-        var map = L.map('map').setView([22.4552, 73.0745], 11);
+        var map = L.map('map').setView(svitCoords, 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         var markers = {};
         var busIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png', iconSize: [35, 35] });
@@ -103,34 +123,40 @@
             }
         };
 
+        function calculateMetrics(lat1, lon1, speed) {
+            const R = 6371;
+            const dLat = (svitCoords[0] - lat1) * Math.PI / 180;
+            const dLon = (svitCoords[1] - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(svitCoords[0] * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const eta = Math.round((dist / 30) * 60);
+            let traffic = { text: "Smooth", color: "var(--success)" };
+            if (speed < 10) traffic = { text: "Heavy", color: "var(--danger)" };
+            else if (speed < 20) traffic = { text: "Moderate", color: "var(--warning)" };
+            return { eta: eta < 2 ? "Arriving" : eta + " mins", traffic };
+        }
+
         function confirmTrip() {
             document.getElementById("wakeLockAudio").play().catch(e => console.log(e));
             const b = document.getElementById("busId").value;
             const r = document.getElementById("routeSelect").value;
             database.ref('activeBuses/' + r).set({ busId: b, route: r, stops: svitRoutes[r], status: "LIVE" });
             navigator.geolocation.watchPosition(pos => {
-                database.ref('activeBuses/' + r).update({ lat: pos.coords.latitude, lon: pos.coords.longitude, lastSeen: new Date().toLocaleTimeString() });
+                database.ref('activeBuses/' + r).update({ 
+                    lat: pos.coords.latitude, lon: pos.coords.longitude, 
+                    speed: (pos.coords.speed || 0) * 3.6, lastSeen: new Date().toLocaleTimeString() 
+                });
             }, null, { enableHighAccuracy: true });
             alert("Trip Started!");
         }
 
-        // NEW: Remove specific route
-        function removeSpecificRoute() {
+        function removeRoute() {
             const r = document.getElementById("routeSelect").value;
-            database.ref('activeBuses/' + r).remove().then(() => {
-                alert("Route " + r + " removed from live map.");
-                location.reload(); 
-            });
+            database.ref('activeBuses/' + r).remove().then(() => location.reload());
         }
 
-        // NEW: Clear all buses
-        function clearAllBuses() {
-            if(confirm("Are you sure you want to clear ALL buses from the map?")) {
-                database.ref('activeBuses').remove().then(() => {
-                    alert("All live data cleared.");
-                    location.reload();
-                });
-            }
+        function clearAll() {
+            if(confirm("Wipe map?")) database.ref('activeBuses').remove().then(() => location.reload());
         }
 
         database.ref('activeBuses').on('value', snap => {
@@ -141,8 +167,15 @@
             if (!data) return;
             for (let k in data) {
                 const b = data[k];
-                if (b.lat) { markers[k] = L.marker([b.lat, b.lon], {icon: busIcon}).addTo(map); }
-                body.innerHTML += `<tr><td><b>${b.busId}</b></td><td><b color="#3498db">Route ${b.route}</b><br><small>${b.stops}</small></td><td><span style="color:green;">● LIVE</span><br><small>${b.lastSeen || ''}</small></td></tr>`;
+                const metrics = b.lat ? calculateMetrics(b.lat, b.lon, b.speed || 0) : null;
+                if (b.lat) markers[k] = L.marker([b.lat, b.lon], {icon: busIcon}).addTo(map).bindPopup(b.busId);
+                body.innerHTML += `<tr>
+                    <td><b>${b.busId}</b></td>
+                    <td><b style="color:var(--accent)">Route ${b.route}</b><br><small>${b.stops}</small></td>
+                    <td><span class="badge" style="background:var(--accent)">${metrics ? metrics.eta : '---'}</span><br>
+                        <span class="badge" style="background:${metrics ? metrics.traffic.color : '#ccc'}">${metrics ? metrics.traffic.text : '---'}</span></td>
+                    <td><span class="badge" style="background:var(--success)">● LIVE</span><br><small>${b.lastSeen || ''}</small></td>
+                </tr>`;
             }
         });
 
